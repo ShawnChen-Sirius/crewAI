@@ -1678,13 +1678,23 @@ def _setup_before_llm_call_hooks(
     Returns:
         True if LLM execution should proceed, False if blocked by a hook.
     """
-    if executor_context and executor_context.before_llm_call_hooks:
+    if executor_context:
         from crewai.hooks.dispatch import (
             HookAborted,
             InterceptionPoint,
+            get_scoped_hooks,
             run_hooks,
         )
         from crewai.hooks.llm_hooks import LLMCallHookContext, before_llm_call_reducer
+
+        # Executor snapshot first, then execution-scoped hooks — the same
+        # ordering dispatch() applies to global vs scoped hooks.
+        hooks: list[Any] = [
+            *executor_context.before_llm_call_hooks,
+            *get_scoped_hooks(InterceptionPoint.PRE_MODEL_CALL),
+        ]
+        if not hooks:
+            return True
 
         original_messages = executor_context.messages
 
@@ -1693,7 +1703,7 @@ def _setup_before_llm_call_hooks(
             run_hooks(
                 InterceptionPoint.PRE_MODEL_CALL,
                 hook_context,
-                executor_context.before_llm_call_hooks,
+                hooks,
                 reducer=before_llm_call_reducer,
                 verbose=verbose,
             )
@@ -1740,9 +1750,18 @@ def _setup_after_llm_call_hooks(
     Returns:
         The potentially modified response (string or Pydantic model).
     """
-    if executor_context and executor_context.after_llm_call_hooks:
-        from crewai.hooks.dispatch import InterceptionPoint, run_hooks
+    if executor_context:
+        from crewai.hooks.dispatch import InterceptionPoint, get_scoped_hooks, run_hooks
         from crewai.hooks.llm_hooks import LLMCallHookContext, after_llm_call_reducer
+
+        # Executor snapshot first, then execution-scoped hooks — the same
+        # ordering dispatch() applies to global vs scoped hooks.
+        hooks: list[Any] = [
+            *executor_context.after_llm_call_hooks,
+            *get_scoped_hooks(InterceptionPoint.POST_MODEL_CALL),
+        ]
+        if not hooks:
+            return answer
 
         original_messages = executor_context.messages
 
@@ -1758,7 +1777,7 @@ def _setup_after_llm_call_hooks(
         run_hooks(
             InterceptionPoint.POST_MODEL_CALL,
             hook_context,
-            executor_context.after_llm_call_hooks,
+            hooks,
             reducer=after_llm_call_reducer,
             verbose=verbose,
         )
