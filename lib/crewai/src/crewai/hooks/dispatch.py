@@ -56,6 +56,24 @@ class InterceptionPoint(str, Enum):
     PRE_TOOL_CALL = "pre_tool_call"
     POST_TOOL_CALL = "post_tool_call"
 
+    # Step & agent points
+    PRE_STEP = "pre_step"
+    POST_STEP = "post_step"
+    TOOL_SELECTION = "tool_selection"
+    PRE_DELEGATION = "pre_delegation"
+    RETRY_ATTEMPT = "retry_attempt"
+
+    # Subsystem points
+    MEMORY_WRITE = "memory_write"
+    MEMORY_READ = "memory_read"
+    KNOWLEDGE_RETRIEVAL = "knowledge_retrieval"
+    PRE_CODE_EXECUTION = "pre_code_execution"
+    MCP_CONNECT = "mcp_connect"
+
+    # Flow-specific points
+    FLOW_TRANSITION = "flow_transition"
+    ROUTER_DECISION = "router_decision"
+
 
 class HookAborted(Exception):  # noqa: N818 - public contract name from OSS-86
     """Raised by a hook (or a legacy adapter) to abort the intercepted operation.
